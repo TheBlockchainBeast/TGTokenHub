@@ -1,33 +1,26 @@
 import { NextResponse } from 'next/server';
 import { ContractService } from '@/app/services/contracts';
 import { TelegramService } from '@/app/services/telegram';
-import crypto from 'crypto';
 
 const contractService = new ContractService();
 const telegramService = new TelegramService(contractService);
 
-// Function to verify the request is from Telegram
-function verifyTelegramWebhook(request: Request, secretToken: string): boolean {
-    try {
-        // Get the X-Telegram-Bot-Api-Secret-Token header
-        const secretHeader = request.headers.get('x-telegram-bot-api-secret-token');
+// Simple authentication check
+function isValidTelegramRequest(request: Request): boolean {
+    const botToken = process.env.TELEGRAM_BOT_TOKEN;
+    if (!botToken) return true; // Accept all requests if no token is set (not recommended for production)
 
-        // If there's no secret token set, accept all requests (not recommended for production)
-        if (!secretToken) {
-            console.warn('No secret token configured, accepting all requests');
-            return true;
-        }
+    // Get the token from the URL path
+    const url = new URL(request.url);
+    const pathParts = url.pathname.split('/');
+    const tokenFromPath = pathParts[pathParts.length - 2]; // Get the second to last part of the path
 
-        // Verify the secret token matches
-        return secretHeader === secretToken;
-    } catch (error) {
-        console.error('Error verifying webhook:', error);
-        return false;
-    }
+    return tokenFromPath === botToken;
 }
 
 export async function POST(request: Request) {
     console.log('Received webhook request');
+    console.log('Request URL:', request.url);
     console.log('Headers:', Object.fromEntries(request.headers.entries()));
 
     try {
