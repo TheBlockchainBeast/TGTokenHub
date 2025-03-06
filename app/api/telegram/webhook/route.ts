@@ -28,19 +28,7 @@ function verifyTelegramWebhook(request: Request, secretToken: string): boolean {
 
 export async function POST(request: Request) {
     console.log('Received webhook request');
-
-    // Generate a secret token from the bot token
-    const secretToken = crypto
-        .createHash('sha256')
-        .update(process.env.TELEGRAM_BOT_TOKEN || '')
-        .digest('hex')
-        .slice(0, 20);
-
-    // Verify the request
-    if (!verifyTelegramWebhook(request, secretToken)) {
-        console.error('Invalid webhook request');
-        return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
-    }
+    console.log('Headers:', Object.fromEntries(request.headers.entries()));
 
     try {
         const update = await request.json();
