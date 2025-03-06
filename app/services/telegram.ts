@@ -10,30 +10,44 @@ export class TelegramService {
         this.contractService = contractService;
         this.botToken = process.env.TELEGRAM_BOT_TOKEN || '';
         this.botUrl = `https://api.telegram.org/bot${this.botToken}`;
+        console.log('TelegramService initialized with bot URL:', this.botUrl);
     }
 
     async handleUpdate(update: any) {
-        if (!update.message) return;
+        console.log('Handling update:', JSON.stringify(update, null, 2));
+
+        if (!update.message) {
+            console.log('No message in update');
+            return;
+        }
 
         const chatId = update.message.chat.id;
         const text = update.message.text;
         const username = update.message.from.username;
 
+        console.log('Processing message:', { chatId, text, username });
+
         if (!username) {
+            console.log('No username provided');
             await this.sendMessage(chatId, 'Please set a username in your Telegram account to use this bot.');
             return;
         }
 
         try {
             if (text.startsWith('/start')) {
+                console.log('Handling /start command');
                 await this.handleStart(chatId, username);
             } else if (text.startsWith('/price')) {
+                console.log('Handling /price command');
                 await this.handlePrice(chatId, username);
             } else if (text.startsWith('/mint')) {
+                console.log('Handling /mint command');
                 await this.handleMint(chatId, username, text);
             } else if (text.startsWith('/burn')) {
+                console.log('Handling /burn command');
                 await this.handleBurn(chatId, username, text);
             } else {
+                console.log('Unknown command:', text);
                 await this.sendMessage(chatId, 'Unknown command. Available commands:\n/start - Get started\n/price - Check token price\n/mint <amount> - Mint tokens\n/burn <amount> - Burn tokens');
             }
         } catch (error) {

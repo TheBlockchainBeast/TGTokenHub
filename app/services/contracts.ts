@@ -11,9 +11,17 @@ export class ContractService {
     private signer: ethers.Signer | null = null;
 
     constructor() {
+        console.log('Initializing ContractService with:', {
+            rpcUrl: process.env.NEXT_PUBLIC_RPC_URL,
+            factoryAddress: TG_TOKEN_FACTORY_ADDRESS,
+            bondingCurveAddress: BONDING_CURVE_ADDRESS
+        });
+
         this.provider = new ethers.JsonRpcProvider(process.env.NEXT_PUBLIC_RPC_URL);
         this.factory = TGTokenFactory__factory.connect(TG_TOKEN_FACTORY_ADDRESS, this.provider);
         this.bondingCurve = BondingCurve__factory.connect(BONDING_CURVE_ADDRESS, this.provider);
+
+        console.log('ContractService initialized successfully');
     }
 
     async connect(signer: ethers.Signer) {
@@ -31,7 +39,15 @@ export class ContractService {
     }
 
     async getTokenAddress(username: string) {
-        return await this.factory.getTokenAddress(username);
+        console.log('Getting token address for username:', username);
+        try {
+            const address = await this.factory.getTokenAddress(username);
+            console.log('Token address:', address);
+            return address;
+        } catch (error) {
+            console.error('Error getting token address:', error);
+            throw error;
+        }
     }
 
     async getTelegramUsername(tokenAddress: string) {
@@ -39,22 +55,30 @@ export class ContractService {
     }
 
     async getTokenInfo(tokenAddress: string) {
-        const token = TGToken__factory.connect(tokenAddress, this.provider);
-        const [name, symbol, creator, socialScore, lastUpdate] = await Promise.all([
-            token.name(),
-            token.symbol(),
-            token.creator(),
-            token.socialScore(),
-            token.lastUpdate()
-        ]);
+        console.log('Getting token info for address:', tokenAddress);
+        try {
+            const token = TGToken__factory.connect(tokenAddress, this.provider);
+            const [name, symbol, creator, socialScore, lastUpdate] = await Promise.all([
+                token.name(),
+                token.symbol(),
+                token.creator(),
+                token.socialScore(),
+                token.lastUpdate()
+            ]);
 
-        return {
-            name,
-            symbol,
-            creator,
-            socialScore,
-            lastUpdate
-        };
+            const info = {
+                name,
+                symbol,
+                creator,
+                socialScore,
+                lastUpdate
+            };
+            console.log('Token info:', info);
+            return info;
+        } catch (error) {
+            console.error('Error getting token info:', error);
+            throw error;
+        }
     }
 
     async getTokenBalance(tokenAddress: string, address: string) {
@@ -72,8 +96,16 @@ export class ContractService {
 
     // Bonding Curve Functions
     async getCurrentPrice(tokenAddress: string) {
-        const token = TGToken__factory.connect(tokenAddress, this.provider);
-        return await token.getCurrentPrice();
+        console.log('Getting current price for token:', tokenAddress);
+        try {
+            const token = TGToken__factory.connect(tokenAddress, this.provider);
+            const price = await token.getCurrentPrice();
+            console.log('Current price:', price.toString());
+            return price;
+        } catch (error) {
+            console.error('Error getting current price:', error);
+            throw error;
+        }
     }
 
     async calculateTokensForEth(tokenAddress: string, ethAmount: bigint) {
