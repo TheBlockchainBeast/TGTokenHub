@@ -7,7 +7,8 @@
         "build": "next build",
         "start": "next start",
         "lint": "next lint",
-        "setup-telegram-webhook": "tsc -p scripts/tsconfig.json && node scripts/setup-telegram-webhook.js"
+        "setup-telegram-webhook": "tsc -p scripts/tsconfig.json && node scripts/setup-telegram-webhook.js",
+        "copy-types": "ts-node scripts/copy-types.ts"
     },
     "dependencies": {
         "@headlessui/react": "^1.7.18",
@@ -26,7 +27,9 @@
         "@openzeppelin/contracts": "^5.0.1",
         "dotenv": "^16.4.5",
         "ts-node": "^10.9.2",
-        "typescript": "^5"
+        "typescript": "^5",
+        "hardhat": "^2.19.5",
+        "@nomicfoundation/hardhat-toolbox": "^4.0.0"
     },
     "devDependencies": {
         "@types/node": "^20.11.19",
