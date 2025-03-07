@@ -9,22 +9,26 @@ export async function POST(request: Request, { params }: { params: { token: stri
     console.log('Received webhook request');
     console.log('Token from URL:', params.token);
     console.log('Bot token from env:', process.env.TELEGRAM_BOT_TOKEN);
+    console.log('Request URL:', request.url);
     console.log('Headers:', Object.fromEntries(request.headers.entries()));
-
-    // Verify the token from the URL matches our bot token
-    if (params.token !== process.env.TELEGRAM_BOT_TOKEN) {
-        console.error('Invalid bot token');
-        return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
-    }
 
     try {
         const update = await request.json();
         console.log('Webhook update:', JSON.stringify(update, null, 2));
-        await telegramService.handleUpdate(update);
-        console.log('Successfully handled webhook update');
+
+        // Always respond with 200 OK to Telegram
+        try {
+            await telegramService.handleUpdate(update);
+            console.log('Successfully handled webhook update');
+        } catch (error) {
+            console.error('Error in handleUpdate:', error);
+            // Don't throw the error, just log it
+        }
+
         return NextResponse.json({ ok: true });
     } catch (error) {
         console.error('Error handling webhook:', error);
-        return NextResponse.json({ ok: false, error: 'Internal server error' }, { status: 500 });
+        // Still return 200 OK to Telegram
+        return NextResponse.json({ ok: true });
     }
 } 

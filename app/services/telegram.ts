@@ -7,6 +7,7 @@ export class TelegramService {
     private botUrl: string;
 
     constructor(contractService: ContractService) {
+        console.log('Initializing TelegramService');
         this.contractService = contractService;
         this.botToken = process.env.TELEGRAM_BOT_TOKEN || '';
         this.botUrl = `https://api.telegram.org/bot${this.botToken}`;
@@ -14,7 +15,7 @@ export class TelegramService {
     }
 
     async handleUpdate(update: any) {
-        console.log('Handling update:', JSON.stringify(update, null, 2));
+        console.log('TelegramService.handleUpdate called with:', JSON.stringify(update, null, 2));
 
         if (!update.message) {
             console.log('No message in update');
@@ -22,13 +23,13 @@ export class TelegramService {
         }
 
         const chatId = update.message.chat.id;
-        const text = update.message.text;
-        const username = update.message.from.username;
+        const text = update.message.text || '';
+        const username = update.message.from?.username;
 
         console.log('Processing message:', { chatId, text, username });
 
         if (!username) {
-            console.log('No username provided');
+            console.log('No username provided, sending error message');
             await this.sendMessage(chatId, 'Please set a username in your Telegram account to use this bot.');
             return;
         }
@@ -57,22 +58,30 @@ export class TelegramService {
     }
 
     private async handleStart(chatId: number, username: string) {
-        const tokenAddress = await this.contractService.getTokenAddress(username);
-        if (tokenAddress === ethers.ZeroAddress) {
-            await this.sendMessage(chatId, `Welcome! Your token hasn't been created yet. Visit our website to create your token: https://tgtokenhub.vercel.app`);
-        } else {
-            const info = await this.contractService.getTokenInfo(tokenAddress);
-            const price = await this.contractService.getCurrentPrice(tokenAddress);
-            await this.sendMessage(chatId,
-                `Welcome! Your token is already created.\n` +
-                `Name: ${info.name}\n` +
-                `Symbol: ${info.symbol}\n` +
-                `Social Score: ${info.socialScore.toString()}\n` +
-                `Current Price: ${ethers.formatEther(price)} ETH\n\n` +
-                `Use /price to check the current price\n` +
-                `Use /mint <amount> to mint tokens\n` +
-                `Use /burn <amount> to burn tokens`
-            );
+        console.log('handleStart called for:', { chatId, username });
+        try {
+            const tokenAddress = await this.contractService.getTokenAddress(username);
+            console.log('Token address for user:', tokenAddress);
+
+            if (tokenAddress === ethers.ZeroAddress) {
+                await this.sendMessage(chatId, `Welcome! Your token hasn't been created yet. Visit our website to create your token: https://tgtokenhub.vercel.app`);
+            } else {
+                const info = await this.contractService.getTokenInfo(tokenAddress);
+                const price = await this.contractService.getCurrentPrice(tokenAddress);
+                await this.sendMessage(chatId,
+                    `Welcome! Your token is already created.\n` +
+                    `Name: ${info.name}\n` +
+                    `Symbol: ${info.symbol}\n` +
+                    `Social Score: ${info.socialScore.toString()}\n` +
+                    `Current Price: ${ethers.formatEther(price)} ETH\n\n` +
+                    `Use /price to check the current price\n` +
+                    `Use /mint <amount> to mint tokens\n` +
+                    `Use /burn <amount> to burn tokens`
+                );
+            }
+        } catch (error) {
+            console.error('Error in handleStart:', error);
+            throw error;
         }
     }
 
@@ -127,20 +136,35 @@ export class TelegramService {
     }
 
     private async sendMessage(chatId: number, text: string) {
-        const response = await fetch(`${this.botUrl}/sendMessage`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                chat_id: chatId,
-                text: text,
-                parse_mode: 'HTML',
-            }),
-        });
+        console.log('Sending message:', { chatId, text });
+        try {
+            const response = await fetch(`${this.botUrl}/sendMessage`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    chat_id: chatId,
+                    text: text,
+                    parse_mode: 'HTML',
+                }),
+            });
 
-        if (!response.ok) {
-            throw new Error(`Failed to send message: ${response.statusText}`);
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('Failed to send message:', {
+                    status: response.status,
+                    statusText: response.statusText,
+                    errorText
+                });
+                throw new Error(`Failed to send message: ${response.statusText}`);
+            }
+
+            const result = await response.json();
+            console.log('Message sent successfully:', result);
+        } catch (error) {
+            console.error('Error sending message:', error);
+            throw error;
         }
     }
 } 
