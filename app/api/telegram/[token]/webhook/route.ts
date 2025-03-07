@@ -5,23 +5,17 @@ import { TelegramService } from '@/app/services/telegram';
 const contractService = new ContractService();
 const telegramService = new TelegramService(contractService);
 
-// Simple authentication check
-function isValidTelegramRequest(request: Request): boolean {
-    const botToken = process.env.TELEGRAM_BOT_TOKEN;
-    if (!botToken) return true; // Accept all requests if no token is set (not recommended for production)
-
-    // Get the token from the URL path
-    const url = new URL(request.url);
-    const pathParts = url.pathname.split('/');
-    const tokenFromPath = pathParts[pathParts.length - 2]; // Get the second to last part of the path
-
-    return tokenFromPath === botToken;
-}
-
-export async function POST(request: Request) {
+export async function POST(request: Request, { params }: { params: { token: string } }) {
     console.log('Received webhook request');
-    console.log('Request URL:', request.url);
+    console.log('Token from URL:', params.token);
+    console.log('Bot token from env:', process.env.TELEGRAM_BOT_TOKEN);
     console.log('Headers:', Object.fromEntries(request.headers.entries()));
+
+    // Verify the token from the URL matches our bot token
+    if (params.token !== process.env.TELEGRAM_BOT_TOKEN) {
+        console.error('Invalid bot token');
+        return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
+    }
 
     try {
         const update = await request.json();
