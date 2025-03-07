@@ -6,27 +6,50 @@ const contractService = new ContractService();
 const telegramService = new TelegramService(contractService);
 
 export async function POST(request: Request) {
-    console.log('Received webhook request');
-    console.log('Request URL:', request.url);
-    console.log('Headers:', Object.fromEntries(request.headers.entries()));
-
     try {
-        const update = await request.json();
-        console.log('Webhook update:', JSON.stringify(update, null, 2));
+        // Log the incoming request
+        console.log('Webhook received:', {
+            url: request.url,
+            method: request.method,
+            headers: Object.fromEntries(request.headers.entries())
+        });
 
-        // Always respond with 200 OK to Telegram
-        try {
-            await telegramService.handleUpdate(update);
-            console.log('Successfully handled webhook update');
-        } catch (error) {
-            console.error('Error in handleUpdate:', error);
-            // Don't throw the error, just log it
+        // Parse the update
+        const update = await request.json();
+        console.log('Update data:', JSON.stringify(update, null, 2));
+
+        // Basic validation
+        if (!update || !update.message) {
+            console.log('Invalid update format:', update);
+            return NextResponse.json({ ok: true }); // Always return 200 OK to Telegram
         }
+
+        // Extract basic info
+        const {
+            message: {
+                chat: { id: chatId },
+                text,
+                from: { username, first_name }
+            }
+        } = update;
+
+        console.log('Processing message:', {
+            chatId,
+            username,
+            first_name,
+            text
+        });
+
+        // Handle the update
+        await telegramService.handleUpdate(update);
+        console.log('Update handled successfully');
 
         return NextResponse.json({ ok: true });
     } catch (error) {
-        console.error('Error handling webhook:', error);
-        // Still return 200 OK to Telegram
+        // Log the error but don't expose it
+        console.error('Error processing webhook:', error);
+
+        // Always return success to Telegram
         return NextResponse.json({ ok: true });
     }
 } 

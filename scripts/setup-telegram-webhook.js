@@ -9,8 +9,8 @@ const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const BASE_URL = process.env.WEBHOOK_URL || 'https://tgtokenhub.vercel.app';
 async function setupWebhook() {
     try {
-        // Construct webhook URL with bot token in the path
-        const webhookUrl = `${BASE_URL}/api/telegram/${BOT_TOKEN}/webhook`;
+        // Use a simpler webhook URL
+        const webhookUrl = `${BASE_URL}/api/telegram-webhook`;
         const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/setWebhook`, {
             method: 'POST',
             headers: {
